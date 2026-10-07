@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SAYMODZ Chat</title>
+    <style>
+        :root {
+            --bg-dark: #121417;
+            --bg-panel: #1e222a;
+            --bg-card: #282c34;
+            --border: #3b404d;
+            --accent: #5c7cfa;
+            --text: #e6e9ef;
+            --text-sub: #9ea4b0;
+            --danger: #f75b5b;
+            --admin-color: #ffd700;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            font-size: 10px;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: var(--bg-dark);
+            color: var(--text);
+        }
+
+        #app {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            background: var(--bg-dark);
+            overflow: hidden;
+        }
+
+        /* AUTH EKRANI */
+        .auth-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 999;
+            background: var(--bg-dark);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+
+        .auth-box {
+            width: 100%;
+            max-width: 200px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .auth-title { font-size: 12px; font-weight: bold; color: var(--accent); margin-bottom: 2px; }
+        .auth-sub { font-size: 8.5px; color: var(--text-sub); margin-bottom: 8px; }
+
+        .inp {
+            width: 100%;
+            padding: 5px 6px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: #fff;
+            margin-bottom: 6px;
+            outline: none;
+            font-size: 9px;
+        }
+
+        .inp:focus { border-color: var(--accent); }
+
+        .btn {
+            width: 100%;
+            padding: 5px;
+            background: var(--accent);
+            border: none;
+            border-radius: 4px;
+            color: #fff;
+            font-weight: bold;
+            font-size: 9px;
+            cursor: pointer;
+        }
+
+        .btn:disabled { opacity: 0.5; }
+
+        .toggle-auth { margin-top: 6px; font-size: 8px; color: var(--text-sub); cursor: pointer; }
+        .toggle-auth span { color: var(--accent); }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: 36px;
+            height: 100vh;
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 6px 0;
+            gap: 8px;
+            flex-shrink: 0;
+            justify-content: space-between;
+        }
+
+        .side-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .side-item {
+            width: 26px;
+            height: 26px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            cursor: pointer;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-sub);
+            transition: 0.2s;
+            position: relative;
+        }
+
+        .side-item.active {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+
+        /* KIRMIZI NOKTA BİLDİRİMİ */
+        .badge-dot {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 6px;
+            height: 6px;
+            background: var(--danger);
+            border-radius: 50%;
+            display: none;
+        }
+
+        .badge-dot.active { display: block; }
+
+        /* MAIN CONTAINER */
+        .main-container {
+            flex: 1;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .topbar {
+            height: 24px;
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 6px;
+            flex-shrink: 0;
+        }
+
+        .topbar-title {
+            font-size: 9px;
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .topbar-btns { display: flex; gap: 4px; }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 10px;
+            cursor: pointer;
+        }
+
+        .content {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+            background: var(--bg-dark);
+        }
+
+        .panel {
+            display: none;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+        }
+
+        .panel.active { display: flex; }
+
+        /* SOHBET */
+        .chat-body {
+            flex: 1;
+            padding: 6px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            touch-action: pan-y;
+        }
+
+        .msg-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 4px 6px;
+            max-width: 85%;
+            align-self: flex-start;
+            position: relative;
+            touch-action: pan-y;
+            transition: transform 0.15s ease-out;
+        }
+
+        .msg-box.self {
+            align-self: flex-end;
+            background: rgba(92, 124, 250, 0.2);
+            border-color: var(--accent);
+        }
+
+        .msg-reply-preview {
+            background: rgba(0, 0, 0, 0.25);
+            border-left: 2px solid var(--accent);
+            padding: 2px 4px;
+            margin-bottom: 3px;
+            font-size: 7.5px;
+            color: var(--text-sub);
+            border-radius: 2px;
+        }
+
+        .msg-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 7.5px;
+            margin-bottom: 2px;
+        }
+
+        .msg-user { 
+            font-weight: bold; 
+            color: var(--accent); 
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .msg-user.admin { color: var(--admin-color) !important; }
+
+        .msg-time { color: var(--text-sub); margin-left: 4px; }
+        .msg-text { font-size: 8.5px; word-break: break-word; }
+
+        .msg-del {
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 8px;
+            margin-left: 4px;
+        }
+
+        .reply-bar {
+            background: var(--bg-card);
+            border-top: 1px solid var(--border);
+            padding: 2px 6px;
+            font-size: 8px;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            color: var(--text-sub);
+        }
+
+        .input-bar {
+            height: 26px;
+            padding: 2px 4px;
+            background: var(--bg-panel);
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 3px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .list-area {
+            flex: 1;
+            padding: 4px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .row-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg-card);
+            padding: 4px 6px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            font-size: 8.5px;
+        }
+
+        /* ÇEVRİMİÇİ KULLANICILAR ÇEKMECESİ (SLIDE DRAWER) */
+        .online-drawer {
+            position: absolute;
+            top: 0;
+            right: -160px;
+            width: 160px;
+            height: 100%;
+            background: var(--bg-panel);
+            border-left: 1px solid var(--border);
+            z-index: 50;
+            transition: right 0.25s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            padding: 6px;
+        }
+
+        .online-drawer.open { right: 0; }
+
+        .online-title {
+            font-size: 9px;
+            font-weight: bold;
+            color: var(--accent);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 4px;
+            margin-bottom: 6px;
+        }
+
+        .online-user-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 8.5px;
+            padding: 3px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .online-user-item:hover { background: var(--bg-card); }
+
+        .online-status-dot {
+            width: 6px;
+            height: 6px;
+            background: #22c55e;
+            border-radius: 50%;
+        }
+
+        /* MODALLAR */
+        .modal {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 1000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 8px;
+        }
+
+        .modal.active { display: flex; }
+
+        .modal-box {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            width: 100%;
+            max-width: 280px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-head {
+            padding: 6px 8px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            font-size: 9px;
+            font-weight: bold;
+        }
+
+        .modal-body {
+            flex: 1;
+            padding: 8px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .user-popover {
+            position: absolute;
+            z-index: 1001;
+            background: var(--bg-panel);
+            border: 1px solid var(--accent);
+            border-radius: 4px;
+            padding: 6px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            width: 130px;
+        }
+
+        .user-popover-title {
+            font-weight: bold;
+            font-size: 9px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 2px;
+            text-align: center;
+        }
+
+        .friend-select-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 8.5px;
+            background: var(--bg-dark);
+            padding: 4px;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar { width: 2px; }
+        ::-webkit-scrollbar-thumb { background: var(--border); }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <!-- AUTH EKRANI -->
+    <div id="authScreen" class="auth-overlay">
+        <div class="auth-box">
+            <div class="auth-title">SAYMODZ CHAT</div>
+            
+            <div id="autoAuthBox" style="display:none;">
+                <div class="auth-sub" style="color:var(--accent);">Kayıtlı Hesap Bulundu</div>
+                <div id="autoUsername" style="font-weight:bold; font-size:10px; margin-bottom:8px;"></div>
+                <button class="btn" onclick="confirmAutoLogin()">Devam Et</button>
+                <div class="toggle-auth" onclick="switchToNormalLogin()"><span>Farklı Hesapla Giriş Yap</span></div>
+            </div>
+
+            <div id="normalAuthBox">
+                <div class="auth-sub" id="authSub">Giriş Yap</div>
+                <input type="text" id="authU" class="inp" placeholder="Kullanıcı Adı">
+                <input type="password" id="authP" class="inp" placeholder="Şifre">
+                <button class="btn" id="authBtn" onclick="handleAuth()">Giriş Yap</button>
+                <div class="toggle-auth" onclick="toggleAuthMode()">
+                    <span id="toggleTxt">Hesabın yok mu? Kayıt Ol</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <div class="side-group">
+            <!-- Genel Chat -->
+            <div class="side-item active" id="tab-chat" onclick="switchTab('chat', this)" title="Genel Sohbet">
+                💬
+                <div class="badge-dot" id="dot-chat"></div>
+            </div>
+            <!-- Duyurular -->
+            <div class="side-item" id="tab-announcements" onclick="switchTab('announcements', this)" title="Duyurular & Kurallar">
+                📢
+                <div class="badge-dot" id="dot-announcements"></div>
+            </div>
+            <!-- Gruplar -->
+            <div class="side-item" id="tab-groups" onclick="switchTab('groups', this)" title="Gruplar">
+                👥
+            </div>
+            <!-- Arkadaşlar & DMs -->
+            <div class="side-item" id="tab-friends" onclick="switchTab('friends', this)" title="Arkadaşlar">
+                👤
+            </div>
+        </div>
+        
+        <div class="side-group">
+            <div class="side-item" onclick="openModal('settingsModal')" title="Profil & Ayarlar" style="border-color:var(--accent);">⚙️</div>
+        </div>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <div class="main-container">
+        <div class="topbar">
+            <div class="topbar-title" id="panelTitle">💬 Genel Chat</div>
+            <div class="topbar-btns">
+                <button class="icon-btn" onclick="toggleOnlineDrawer()" title="Çevrimiçi Kullanıcılar">🟢</button>
+                <button class="icon-btn" onclick="closePanel()">✕</button>
+            </div>
+        </div>
+
+        <div class="content" id="contentArea">
+            <!-- CHAT PANELİ -->
+            <div id="chatPanel" class="panel active">
+                <div class="chat-body" id="messagesList"></div>
+                
+                <div class="reply-bar" id="replyBar">
+                    <span id="replyTargetText">Yanıtlanıyor...</span>
+                    <span onclick="cancelReply()" style="cursor:pointer; font-weight:bold;">✕</span>
+                </div>
+
+                <div class="input-bar" id="inputBarContainer">
+                    <input type="text" id="chatInput" class="inp" style="margin:0;" placeholder="Mesaj..." onkeydown="if(event.key==='Enter') sendMsg()">
+                    <button class="btn" id="sendBtn" onclick="sendMsg()" style="width:22px; height:20px; padding:0;">></button>
+                </div>
+            </div>
+
+            <!-- GRUPLAR PANELİ -->
+            <div id="groupsPanel" class="panel">
+                <div style="padding:4px;">
+                    <button class="btn" onclick="openModal('createGroupModal')">+ Yeni Grup Oluştur</button>
+                </div>
+                <div class="list-area" id="groupsList"></div>
+            </div>
+
+            <!-- ARKADAŞLAR PANELİ -->
+            <div id="friendsPanel" class="panel">
+                <div style="padding:4px; display:flex; gap:2px;">
+                    <input type="text" id="friendInp" class="inp" style="margin:0;" placeholder="Kullanıcı adı gir...">
+                    <button class="btn" onclick="addFriendManual()" style="width:45px;">Ekle</button>
+                </div>
+                <div class="list-area" id="friendsList"></div>
+            </div>
+
+            <!-- ÇEVRİMİÇİ KULLANICILAR ÇEKMECESİ -->
+            <div class="online-drawer" id="onlineDrawer">
+                <div class="online-title">🟢 Çevrimiçi Kullanıcılar</div>
+                <div id="onlineUsersList" style="display:flex; flex-direction:column; gap:4px; overflow-y:auto; flex:1;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- GRUP OLUŞTURMA MODAL -->
+<div id="createGroupModal" class="modal">
+    <div class="modal-box">
+        <div class="modal-head"><span>👥 Grup Oluştur</span><span onclick="closeModal('createGroupModal')" style="cursor:pointer;">✕</span></div>
+        <div class="modal-body">
+            <input type="text" id="newGroupNameInp" class="inp" placeholder="Grup Adı">
+            <div style="font-size:8px; color:var(--text-sub);">Gruba Eklenecek Arkadaşlar:</div>
+            <div id="friendSelectList" style="display:flex; flex-direction:column; gap:4px; max-height:120px; overflow-y:auto;"></div>
+            <button class="btn" onclick="submitCreateGroup()" style="margin-top:6px;">Grubu Kur</button>
+        </div>
+    </div>
+</div>
+
+<!-- GRUP DÜZENLEME MODAL -->
+<div id="editGroupModal" class="modal">
+    <div class="modal-box">
+        <div class="modal-head"><span>✏️ Grubu Düzenle</span><span onclick="closeModal('editGroupModal')" style="cursor:pointer;">✕</span></div>
+        <div class="modal-body">
+            <input type="text" id="editGroupNameInp" class="inp" placeholder="Yeni Grup Adı">
+            <button class="btn" onclick="submitEditGroup()">İsmi Güncelle</button>
+            <button class="btn" style="background:var(--danger); margin-top:8px;" onclick="submitDeleteGroup()">Grubu Sil</button>
+        </div>
+    </div>
+</div>
+
+<!-- POPUP KULLANICI SEÇENEKLERİ -->
+<div id="userPopover" class="user-popover">
+    <div class="user-popover-title" id="popoverUsername">Kullanıcı</div>
+    <button class="btn" onclick="addFriendFromPopover()">Arkadaş Ekle</button>
+    <button class="btn" style="background:#4b5563;" onclick="openDMFromPopover()">Özel Mesaj (DM)</button>
+    <div id="adminPopSection" style="display:none; flex-direction:column; gap:4px; margin-top:2px; border-top:1px solid var(--border); padding-top:4px;">
+        <button class="btn" style="background:var(--danger);" onclick="banUserFromPopover()">Kullanıcıyı Banla</button>
+    </div>
+    <button class="btn" style="background:transparent; border:1px solid var(--border); color:var(--text-sub);" onclick="closeUserPopover()">Kapat</button>
+</div>
+
+<!-- AYARLAR & PROFİL MODAL -->
+<div id="settingsModal" class="modal">
+    <div class="modal-box">
+        <div class="modal-head"><span>⚙️ Profil & Ayarlar</span><span onclick="closeModal('settingsModal')" style="cursor:pointer;">✕</span></div>
+        <div class="modal-body">
+            <div style="font-size:9px; color:var(--text-sub);">Mevcut Kullanıcı: <b id="settingsUser"></b></div>
+            <div style="font-size:8px; color:var(--admin-color);" id="adminBadge"></div>
+
+            <hr style="border:0; border-top:1px solid var(--border); margin:4px 0;">
+
+            <label style="font-size:8px; color:var(--text-sub);">Kullanıcı Adını Değiştir:</label>
+            <input type="text" id="changeUsernameInp" class="inp" placeholder="Yeni Kullanıcı Adı">
+            <button class="btn" onclick="changeUsername()">Kullanıcı Adı Değiştir</button>
+
+            <hr style="border:0; border-top:1px solid var(--border); margin:4px 0;">
+
+            <label style="font-size:8px; color:var(--text-sub);">Şifreyi Değiştir:</label>
+            <input type="password" id="changePasswordInp" class="inp" placeholder="Yeni Şifre">
+            <button class="btn" onclick="changePassword()">Şifreyi Güncelle</button>
+
+            <button class="btn" style="background:var(--danger); margin-top:auto;" onclick="logout()">Oturumu Kapat</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, updatePassword }
+        from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getDatabase, ref, push, onValue, set, remove, get, update, onDisconnect }
+        from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDrr7d_enIeE1pOk-Ov_23TpwKEpDrHRdw",
+        authDomain: "saymodz-2d1ed.firebaseapp.com",
+        databaseURL: "https://saymodz-2d1ed-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "saymodz-2d1ed",
+        storageBucket: "saymodz-2d1ed.firebasestorage.app",
+        messagingSenderId: "203228147622",
+        appId: "1:203228147622:web:fb9101596485d2d3596967"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    let currentUser = null;
+    let currentUserData = null;
+    let currentMode = 'general'; // 'general', 'announcements', 'group', 'dm'
+    let activeGroupId = null;
+    let activeDMTarget = null;
+    let isRegister = false;
+
+    let selectedUserForPop = null;
+    let replyingToMsg = null;
+    let lastMsgTime = 0;
+    let editingGroupId = null;
+    let initialLoad = true;
+
+    let unsubscribeMessages = null;
+
+    // WEB AUDIO API MESAJ SESI
+    function playNotificationSound() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+            osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.1); // A5
+            gain.gain.setValueAtTime(0.1, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.1);
+        } catch (e) {}
+    }
+
+    function userToEmail(username) {
+        return username.toLowerCase().replace(/[^a-z0-9]/g, '') + "@saymodz.chat";
+    }
+
+    // AUTO LOGIN
+    window.addEventListener('DOMContentLoaded', () => {
+        const savedAccount = localStorage.getItem('saymodz_saved_user');
+        if (savedAccount) {
+            document.getElementById('normalAuthBox').style.display = 'none';
+            document.getElementById('autoAuthBox').style.display = 'block';
+            document.getElementById('autoUsername').innerText = "@" + savedAccount;
+        }
+        setupSwipeOnlineDrawer();
+    });
+
+    window.confirmAutoLogin = function() {
+        const savedPass = localStorage.getItem('saymodz_saved_pass');
+        const savedUser = localStorage.getItem('saymodz_saved_user');
+        if (savedUser && savedPass) {
+            document.getElementById('authU').value = savedUser;
+            document.getElementById('authP').value = savedPass;
+            handleAuth();
+        } else {
+            switchToNormalLogin();
+        }
+    };
+
+    window.switchToNormalLogin = function() {
+        document.getElementById('autoAuthBox').style.display = 'none';
+        document.getElementById('normalAuthBox').style.display = 'block';
+    };
+
+    window.toggleAuthMode = function() {
+        isRegister = !isRegister;
+        document.getElementById('authSub').innerText = isRegister ? "Kayıt Ol" : "Giriş Yap";
+        document.getElementById('authBtn').innerText = isRegister ? "Kayıt Ol" : "Giriş Yap";
+        document.getElementById('toggleTxt').innerHTML = isRegister ? "Hesabın var mı? <span>Giriş Yap</span>" : "Hesabın yok mu? <span>Kayıt Ol</span>";
+    };
+
+    window.handleAuth = async function() {
+        const u = document.getElementById('authU').value.trim();
+        const p = document.getElementById('authP').value.trim();
+        if (!u || !p) return alert("Bilgileri doldurun!");
+
+        const btn = document.getElementById('authBtn');
+        btn.disabled = true;
+        btn.innerText = "Yükleniyor...";
+
+        try {
+            const email = userToEmail(u);
+
+            if (isRegister) {
+                const userCred = await createUserWithEmailAndPassword(auth, email, p);
+                await updateProfile(userCred.user, { displayName: u });
+                
+                await set(ref(db, 'users/' + userCred.user.uid), {
+                    username: u,
+                    email: email,
+                    role: u.toLowerCase() === 'admin' ? 'admin' : 'user',
+                    isBanned: false,
+                    createdAt: Date.now()
+                });
+                localStorage.setItem('saymodz_saved_user', u);
+                localStorage.setItem('saymodz_saved_pass', p);
+                alert("Kayıt başarılı!");
+            } else {
+                await signInWithEmailAndPassword(auth, email, p);
+                localStorage.setItem('saymodz_saved_user', u);
+                localStorage.setItem('saymodz_saved_pass', p);
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Hata: " + err.message);
+        } finally {
+            btn.disabled = false;
+        }
+    };
+
+    window.logout = async function() {
+        if (currentUser) {
+            await set(ref(db, 'online/' + currentUser.uid), null);
+        }
+        localStorage.removeItem('saymodz_saved_user');
+        localStorage.removeItem('saymodz_saved_pass');
+        await signOut(auth);
+        location.reload();
+    };
+
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            currentUser = user;
+            
+            const snap = await get(ref(db, 'users/' + user.uid));
+            if (snap.exists()) {
+                currentUserData = snap.val();
+                if (currentUserData.isBanned) {
+                    alert("Hesabınız banlanmıştır!");
+                    await signOut(auth);
+                    location.reload();
+                    return;
+                }
+            }
+
+            // ONLINE STATU YÖNETİMİ
+            const myOnlineRef = ref(db, 'online/' + user.uid);
+            await set(myOnlineRef, { username: user.displayName, onlineAt: Date.now() });
+            onDisconnect(myOnlineRef).remove();
+
+            document.getElementById('authScreen').style.display = 'none';
+            document.getElementById('settingsUser').innerText = user.displayName || user.email;
+            document.getElementById('adminBadge').innerText = (currentUserData && currentUserData.role === 'admin') ? "👑 Admin Yetkisi Var" : "";
+
+            startApp();
+        } else {
+            currentUser = null;
+            document.getElementById('authScreen').style.display = 'flex';
+        }
+    });
+
+    function startApp() {
+        listenGroups();
+        listenFriends();
+        listenOnlineUsers();
+        listenMessages();
+    }
+
+    window.switchTab = function(tab, el) {
+        document.querySelectorAll('.side-item').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+
+        if (tab === 'chat') {
+            document.getElementById('chatPanel').classList.add('active');
+            currentMode = 'general';
+            activeGroupId = null;
+            activeDMTarget = null;
+            document.getElementById('panelTitle').innerText = "💬 Genel Chat";
+            document.getElementById('dot-chat').classList.remove('active');
+            toggleInputBarVisibility(true);
+            listenMessages();
+        } else if (tab === 'announcements') {
+            document.getElementById('chatPanel').classList.add('active');
+            currentMode = 'announcements';
+            activeGroupId = null;
+            activeDMTarget = null;
+            document.getElementById('panelTitle').innerText = "📢 Duyurular & Kurallar";
+            document.getElementById('dot-announcements').classList.remove('active');
+            
+            const isAdmin = currentUserData && currentUserData.role === 'admin';
+            toggleInputBarVisibility(isAdmin);
+            listenMessages();
+        } else if (tab === 'groups') {
+            document.getElementById('groupsPanel').classList.add('active');
+            document.getElementById('panelTitle').innerText = "👥 Gruplar";
+        } else if (tab === 'friends') {
+            document.getElementById('friendsPanel').classList.add('active');
+            document.getElementById('panelTitle').innerText = "👤 Arkadaşlar";
+        }
+
+        if (el) el.classList.add('active');
+    };
+
+    function toggleInputBarVisibility(visible) {
+        const bar = document.getElementById('inputBarContainer');
+        bar.style.display = visible ? 'flex' : 'none';
+    }
+
+    // --- MESAJ YÖNETİMİ VE FİLTRELEME ---
+    function listenMessages() {
+        if (unsubscribeMessages) unsubscribeMessages();
+
+        const list = document.getElementById('messagesList');
+        const msgsRef = ref(db, 'messages');
+
+        unsubscribeMessages = onValue(msgsRef, (snapshot) => {
+            list.innerHTML = '';
+            const all = [];
+            snapshot.forEach(child => {
+                all.push({ id: child.key, ...child.val() });
+            });
+
+            // MESAJ KANALLARINI KESİN AYIRMA
+            const filtered = all.filter(m => {
+                if (currentMode === 'general') {
+                    return m.type === 'general';
+                }
+                if (currentMode === 'announcements') {
+                    return m.type === 'announcements';
+                }
+                if (currentMode === 'group') {
+                    return m.type === 'group' && m.groupId === activeGroupId;
+                }
+                if (currentMode === 'dm') {
+                    return m.type === 'dm' && (
+                        (m.sender === currentUser.displayName && m.dmTarget === activeDMTarget) ||
+                        (m.sender === activeDMTarget && m.dmTarget === currentUser.displayName)
+                    );
+                }
+                return false;
+            }).sort((a, b) => a.time - b.time);
+
+            // BİLDİRİM NOKTALARI KONTROLÜ
+            if (!initialLoad) {
+                const latestMsg = all[all.length - 1];
+                if (latestMsg && latestMsg.sender !== currentUser.displayName) {
+                    if (latestMsg.type === 'general' && currentMode !== 'general') {
+                        document.getElementById('dot-chat').classList.add('active');
+                        playNotificationSound();
+                    } else if (latestMsg.type === 'announcements' && currentMode !== 'announcements') {
+                        document.getElementById('dot-announcements').classList.add('active');
+                        playNotificationSound();
+                    } else if (latestMsg.type === currentMode) {
+                        playNotificationSound();
+                    }
+                }
+            }
+            initialLoad = false;
+
+            filtered.forEach(m => {
+                const isSelf = m.sender === currentUser.displayName;
+                const isAdmin = m.role === 'admin';
+                const card = document.createElement('div');
+                card.className = `msg-box ${isSelf ? 'self' : ''}`;
+                const timeStr = new Date(m.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                let replyHtml = '';
+                if (m.replyTo) {
+                    replyHtml = `<div class="msg-reply-preview"><b>${escapeHtml(m.replyTo.sender)}:</b> ${escapeHtml(m.replyTo.text)}</div>`;
+                }
+
+                let deleteBtn = '';
+                if (currentUserData && currentUserData.role === 'admin') {
+                    deleteBtn = `<span class="msg-del" onclick="deleteMessage('${m.id}')">🗑️</span>`;
+                }
+
+                card.innerHTML = `
+                    ${replyHtml}
+                    <div class="msg-head">
+                        <span class="msg-user ${isAdmin ? 'admin' : ''}" onclick="showUserPopover(event, '${escapeHtml(m.sender)}', '${m.senderUid}')">${isAdmin ? '👑 ' : ''}${escapeHtml(m.sender)}</span>
+                        <div>
+                            <span class="msg-time">${timeStr}</span>
+                            ${deleteBtn}
+                        </div>
+                    </div>
+                    <div class="msg-text">${escapeHtml(m.text)}</div>
+                `;
+
+                attachSwipeReply(card, m);
+                list.appendChild(card);
+            });
+
+            list.scrollTop = list.scrollHeight;
+        });
+    }
+
+    function attachSwipeReply(element, msgObj) {
+        let startX = 0;
+        let currentX = 0;
+
+        element.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+        }, { passive: true });
+
+        element.addEventListener('touchmove', (e) => {
+            currentX = e.touches[0].clientX;
+            const diff = currentX - startX;
+            if (diff > 0 && diff < 80) {
+                element.style.transform = `translateX(${diff}px)`;
+            }
+        }, { passive: true });
+
+        element.addEventListener('touchend', () => {
+            const diff = currentX - startX;
+            if (diff > 50) {
+                setReplyTarget(msgObj);
+            }
+            element.style.transform = 'translateX(0px)';
+            startX = 0;
+            currentX = 0;
+        });
+    }
+
+    function setReplyTarget(msgObj) {
+        replyingToMsg = msgObj;
+        document.getElementById('replyBar').style.display = 'flex';
+        document.getElementById('replyTargetText').innerText = `Yanıtlanıyor: @${msgObj.sender} "${msgObj.text.substring(0, 20)}..."`;
+    }
+
+    window.cancelReply = function() {
+        replyingToMsg = null;
+        document.getElementById('replyBar').style.display = 'none';
+    };
+
+    window.sendMsg = async function() {
+        const now = Date.now();
+        if (now - lastMsgTime < 2000) {
+            return alert("Lütfen mesaj atmak için 2 saniye bekleyin!");
+        }
+
+        const input = document.getElementById('chatInput');
+        const text = input.value.trim();
+        if (!text || !currentUser) return;
+
+        lastMsgTime = now;
+
+        try {
+            await push(ref(db, 'messages'), {
+                sender: currentUser.displayName,
+                senderUid: currentUser.uid,
+                role: currentUserData?.role || 'user',
+                text: text,
+                type: currentMode, // 'general', 'announcements', 'group', 'dm'
+                groupId: currentMode === 'group' ? activeGroupId : null,
+                dmTarget: currentMode === 'dm' ? activeDMTarget : null,
+                replyTo: replyingToMsg ? { sender: replyingToMsg.sender, text: replyingToMsg.text } : null,
+                time: now
+            });
+
+            input.value = '';
+            cancelReply();
+            playNotificationSound();
+        } catch (err) {
+            alert("Mesaj gönderilemedi: " + err.message);
+        }
+    };
+
+    window.deleteMessage = async function(msgId) {
+        if (confirm("Mesajı silmek istediğinize emin misiniz?")) {
+            await remove(ref(db, 'messages/' + msgId));
+        }
+    };
+
+    // --- GRUP YÖNETİMİ VE KURUCU SİLME DÜZELTMESİ ---
+    function listenGroups() {
+        onValue(ref(db, 'groups'), (snapshot) => {
+            const list = document.getElementById('groupsList');
+            list.innerHTML = '';
+            if (!snapshot.exists()) return;
+
+            snapshot.forEach(child => {
+                const grp = child.val();
+                const isMember = grp.members && grp.members.includes(currentUser.displayName);
+                const isCreator = grp.createdBy === currentUser.uid;
+
+                if (isMember || isCreator) {
+                    const row = document.createElement('div');
+                    row.className = 'row-item';
+                    
+                    let editBtn = '';
+                    if (isCreator) {
+                        editBtn = `<button class="btn" style="width:auto; padding:1px 5px; background:#4b5563;" onclick="openEditGroupModal('${grp.id}', '${escapeHtml(grp.name)}')">✏️</button>`;
+                    }
+
+                    row.innerHTML = `
+                        <span>👥 ${escapeHtml(grp.name)}</span>
+                        <div style="display:flex; gap:3px;">
+                            ${editBtn}
+                            <button class="btn" style="width: auto; padding: 1px 6px;" onclick="openGroup('${grp.id}', '${escapeHtml(grp.name)}')">Gir</button>
+                        </div>
+                    `;
+                    list.appendChild(row);
+                }
+            });
+        });
+    }
+
+    window.openModal = async function(id) {
+        if (id === 'createGroupModal') {
+            const listContainer = document.getElementById('friendSelectList');
+            listContainer.innerHTML = '';
+            const snap = await get(ref(db, 'friends/' + currentUser.uid));
+            if (snap.exists()) {
+                snap.forEach(child => {
+                    const fname = child.val().name;
+                    const item = document.createElement('label');
+                    item.className = 'friend-select-item';
+                    item.innerHTML = `<input type="checkbox" value="${escapeHtml(fname)}" class="grp-friend-cb"> ${escapeHtml(fname)}`;
+                    listContainer.appendChild(item);
+                });
+            } else {
+                listContainer.innerHTML = '<div style="font-size:8px; color:var(--text-sub);">Henüz arkadaşınız yok.</div>';
+            }
+        }
+        document.getElementById(id).classList.add('active');
+    };
+
+    window.submitCreateGroup = async function() {
+        const name = document.getElementById('newGroupNameInp').value.trim();
+        if (!name) return alert("Grup adı girin!");
+
+        const selectedFriends = [currentUser.displayName];
+        document.querySelectorAll('.grp-friend-cb:checked').forEach(cb => {
+            selectedFriends.push(cb.value);
+        });
+
+        try {
+            const groupRef = push(ref(db, 'groups'));
+            await set(groupRef, {
+                id: groupRef.key,
+                name: name,
+                createdBy: currentUser.uid,
+                members: selectedFriends,
+                createdAt: Date.now()
+            });
+
+            document.getElementById('newGroupNameInp').value = '';
+            closeModal('createGroupModal');
+            alert("Grup kuruldu!");
+        } catch (err) {
+            alert("Hata: " + err.message);
+        }
+    };
+
+    window.openEditGroupModal = function(id, currentName) {
+        editingGroupId = id;
+        document.getElementById('editGroupNameInp').value = currentName;
+        openModal('editGroupModal');
+    };
+
+    window.submitEditGroup = async function() {
+        const newName = document.getElementById('editGroupNameInp').value.trim();
+        if (!newName || !editingGroupId) return;
+
+        await update(ref(db, 'groups/' + editingGroupId), { name: newName });
+        closeModal('editGroupModal');
+        alert("Grup adı güncellendi!");
+    };
+
+    window.submitDeleteGroup = async function() {
+        if (!editingGroupId) return;
+        if (confirm("Bu grubu silmek istediğinizden emin misiniz?")) {
+            await remove(ref(db, 'groups/' + editingGroupId));
+            closeModal('editGroupModal');
+            alert("Grup silindi!");
+        }
+    };
+
+    window.openGroup = function(groupId, groupName) {
+        currentMode = 'group';
+        activeGroupId = groupId;
+        activeDMTarget = null;
+        switchTab('chat', document.querySelectorAll('.side-item')[0]);
+        document.getElementById('panelTitle').innerText = "👥 " + groupName;
+        toggleInputBarVisibility(true);
+        listenMessages();
+    };
+
+    // --- ARKADAŞ EKLEME VE MEVCUT DEĞİL KONTROLÜ ---
+    function listenFriends() {
+        onValue(ref(db, 'friends/' + currentUser.uid), (snapshot) => {
+            const list = document.getElementById('friendsList');
+            list.innerHTML = '';
+            if (!snapshot.exists()) return;
+
+            snapshot.forEach(child => {
+                const f = child.val();
+                const row = document.createElement('div');
+                row.className = 'row-item';
+                row.innerHTML = `
+                    <span>👤 ${escapeHtml(f.name)}</span>
+                    <button class="btn" style="width: auto; padding: 1px 6px;" onclick="openDM('${escapeHtml(f.name)}')">Sohbet</button>
+                `;
+                list.appendChild(row);
+            });
+        });
+    }
+
+    window.addFriendManual = async function() {
+        const target = document.getElementById('friendInp').value.trim();
+        if (!target) return;
+        await addFriendByName(target);
+        document.getElementById('friendInp').value = '';
+    };
+
+    async function addFriendByName(targetName) {
+        if (targetName === currentUser.displayName) return alert("Kendini ekleyemezsin!");
+
+        try {
+            const usersRef = ref(db, 'users');
+            const snap = await get(usersRef);
+            let found = false;
+            
+            snap.forEach(child => {
+                if (child.val().username && child.val().username.toLowerCase() === targetName.toLowerCase()) {
+                    found = true;
+                }
+            });
+
+            if (!found) {
+                return alert("Bu kullanıcı mevcut değil!");
+            }
+
+            await set(ref(db, 'friends/' + currentUser.uid + '/' + targetName), {
+                name: targetName,
+                addedAt: Date.now()
+            });
+            alert(`${targetName} arkadaşlarına eklendi!`);
+        } catch (err) {
+            alert("Arkadaş eklenemedi: " + err.message);
+        }
+    }
+
+    window.openDM = function(targetName) {
+        currentMode = 'dm';
+        activeDMTarget = targetName;
+        activeGroupId = null;
+        switchTab('chat', document.querySelectorAll('.side-item')[0]);
+        document.getElementById('panelTitle').innerText = "✉️ " + targetName;
+        toggleInputBarVisibility(true);
+        listenMessages();
+    };
+
+    // --- ÇEVRİMİÇİ KULLANICILAR VE SWIPE İLE AÇMA ---
+    function listenOnlineUsers() {
+        onValue(ref(db, 'online'), (snapshot) => {
+            const list = document.getElementById('onlineUsersList');
+            list.innerHTML = '';
+            if (!snapshot.exists()) return;
+
+            snapshot.forEach(child => {
+                const u = child.val();
+                const item = document.createElement('div');
+                item.className = 'online-user-item';
+                item.onclick = () => {
+                    if (u.username !== currentUser.displayName) {
+                        openDM(u.username);
+                        toggleOnlineDrawer();
+                    }
+                };
+                item.innerHTML = `
+                    <div class="online-status-dot"></div>
+                    <span>${escapeHtml(u.username)}</span>
+                `;
+                list.appendChild(item);
+            });
+        });
+    }
+
+    window.toggleOnlineDrawer = function() {
+        document.getElementById('onlineDrawer').classList.toggle('open');
+    };
+
+    function setupSwipeOnlineDrawer() {
+        let startX = 0;
+        const area = document.getElementById('contentArea');
+
+        area.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+        }, { passive: true });
+
+        area.addEventListener('touchend', (e) => {
+            const endX = e.changedTouches[0].clientX;
+            const diff = startX - endX;
+
+            // Sola Kaydırma (Çekmeceyi Aç)
+            if (diff > 60) {
+                document.getElementById('onlineDrawer').classList.add('open');
+            }
+            // Sağa Kaydırma (Çekmeceyi Kapat)
+            else if (diff < -60) {
+                document.getElementById('onlineDrawer').classList.remove('open');
+            }
+        });
+    }
+
+    // --- POPUP MENU ---
+    window.showUserPopover = function(e, username, uid) {
+        e.stopPropagation();
+        if (username === currentUser.displayName) return;
+
+        selectedUserForPop = { username, uid };
+        const popover = document.getElementById('userPopover');
+        document.getElementById('popoverUsername').innerText = username;
+
+        if (currentUserData && currentUserData.role === 'admin') {
+            document.getElementById('adminPopSection').style.display = 'flex';
+        } else {
+            document.getElementById('adminPopSection').style.display = 'none';
+        }
+
+        popover.style.display = 'flex';
+        popover.style.left = Math.min(e.clientX, window.innerWidth - 140) + 'px';
+        popover.style.top = Math.min(e.clientY, window.innerHeight - 120) + 'px';
+    };
+
+    window.closeUserPopover = function() {
+        document.getElementById('userPopover').style.display = 'none';
+    };
+
+    window.addFriendFromPopover = function() {
+        if (selectedUserForPop) {
+            addFriendByName(selectedUserForPop.username);
+            closeUserPopover();
+        }
+    };
+
+    window.openDMFromPopover = function() {
+        if (selectedUserForPop) {
+            openDM(selectedUserForPop.username);
+            closeUserPopover();
+        }
+    };
+
+    window.banUserFromPopover = async function() {
+        if (!selectedUserForPop || !selectedUserForPop.uid) return;
+        if (confirm(`${selectedUserForPop.username} kullanıcısını banlamak istiyor musunuz?`)) {
+            await update(ref(db, 'users/' + selectedUserForPop.uid), { isBanned: true });
+            alert("Kullanıcı banlandı!");
+            closeUserPopover();
+        }
+    };
+
+    document.addEventListener('click', () => closeUserPopover());
+
+    // --- PROFİL VE ŞİFRE DEĞİŞTİRME ---
+    window.changeUsername = async function() {
+        const newName = document.getElementById('changeUsernameInp').value.trim();
+        if (!newName) return alert("Geçerli bir kullanıcı adı girin!");
+
+        try {
+            const snap = await get(ref(db, 'users'));
+            let taken = false;
+            snap.forEach(child => {
+                if (child.val().username?.toLowerCase() === newName.toLowerCase()) taken = true;
+            });
+
+            if (taken) return alert("Bu kullanıcı adı zaten alınmış!");
+
+            await updateProfile(auth.currentUser, { displayName: newName });
+            await update(ref(db, 'users/' + currentUser.uid), { username: newName });
+
+            localStorage.setItem('saymodz_saved_user', newName);
+            alert("Kullanıcı adınız değiştirildi!");
+            location.reload();
+        } catch (err) {
+            alert("Hata: " + err.message);
+        }
+    };
+
+    window.changePassword = async function() {
+        const newPass = document.getElementById('changePasswordInp').value.trim();
+        if (!newPass || newPass.length < 6) return alert("Şifre en az 6 karakter olmalıdır!");
+
+        try {
+            await updatePassword(auth.currentUser, newPass);
+            localStorage.setItem('saymodz_saved_pass', newPass);
+            alert("Şifreniz başarıyla güncellendi!");
+            closeModal('settingsModal');
+        } catch (err) {
+            alert("Şifre güncellenemedi: " + err.message);
+        }
+    };
+
+    window.closeModal = function(id) { document.getElementById(id).classList.remove('active'); };
+
+    window.closePanel = function() {
+        if (window.AndroidInterface && window.AndroidInterface.closeChat) {
+            window.AndroidInterface.closeChat();
+        } else {
+            document.getElementById('app').style.display = 'none';
+        }
+    };
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+</script>
+</body>
+</html>
